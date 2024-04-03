@@ -131,6 +131,12 @@ public class DependencyAnalyzer {
         List<Entry<String, Integer>> topNodes = this.processDependencies();
         List<SimpleEntry<String, String>> results = new ArrayList<>();
         topNodes.forEach(entry -> results.add(new SimpleEntry<>(entry.getKey(), class2FilePath.get(entry.getKey()))));
+        try {
+            Thread.sleep(5000); // 睡眠 1000 毫秒，即 1 秒
+        } catch (InterruptedException e) {
+            // 处理中断异常
+        	e.printStackTrace();
+        }
         return results;
     }
     

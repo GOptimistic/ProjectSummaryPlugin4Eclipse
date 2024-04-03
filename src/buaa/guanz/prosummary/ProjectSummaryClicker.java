@@ -43,13 +43,13 @@ public class ProjectSummaryClicker implements IHandler{
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		System.out.println("Start plugin.");
 		// TODO Auto-generated method stub
-		String projectPath = this.getClikeAbsPath();
+		String projectPath = this.getClikAbsPath();
 		if ("".equals(projectPath)) {
 			System.out.println("get project path error");
 			return null;
 		}
 		System.out.println(projectPath);
-		showProjectSummaryWindow(TARGETPROJECTNAME);
+		showProjectSummaryWindow(TARGETPROJECTNAME, projectPath);
 //		Map<String, String> paramMap = new HashMap<>();
 //		paramMap.put("path", projectPath);
 //		String res = HttpTools.postformRequest(HttpVars.PREDICTURL, paramMap);
@@ -80,7 +80,7 @@ public class ProjectSummaryClicker implements IHandler{
 		
 	}
 	
-	private String getClikeAbsPath() {
+	private String getClikAbsPath() {
 		String projectPath = "";
 		ISelection selection = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getSelectionService().getSelection();
 		if (selection instanceof IStructuredSelection) {
@@ -108,7 +108,7 @@ public class ProjectSummaryClicker implements IHandler{
 	/**
 	 * Launch the application.
 	 */
-	private static void showProjectSummaryWindow(String projecrName) {
-		ProjectSummarySWTWindow.runSWTWindow(projecrName);
+	private static void showProjectSummaryWindow(String projectName, String projectPath) {
+		ProjectSummarySWTWindow.runSWTWindow(projectName, projectPath);
 	}
 }

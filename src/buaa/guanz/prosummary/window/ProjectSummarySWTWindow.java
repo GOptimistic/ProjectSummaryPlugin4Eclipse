@@ -4,10 +4,14 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Text;
 
 import buaa.guanz.prosummary.commons.BaseResult.Predict;
+import buaa.guanz.prosummary.utils.DependencyAnalyzer;
+import buaa.guanz.prosummary.utils.FileSummaryGenerator;
+import buaa.guanz.prosummary.utils.ProjectSummaryGenerator;
 
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.custom.ScrolledComposite;
@@ -20,8 +24,19 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.jface.resource.LocalResourceManager;
 import org.eclipse.jface.resource.JFaceResources;
 
+import java.io.File;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.ArrayList;
+import java.util.HashMap;
 
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.ISchedulingRule;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.resource.FontDescriptor;
 
 public class ProjectSummarySWTWindow {
@@ -30,7 +45,15 @@ public class ProjectSummarySWTWindow {
 	private Text text_summary;
 	private Text text_status;
 	private Table table;
+	private TableViewer tableViewer;
 	private String projectName;
+	private String projectPath;
+	private DependencyAnalyzer analyzer = new DependencyAnalyzer();
+	private FileSummaryGenerator fileSummaryGenerator = new FileSummaryGenerator();
+	private ProjectSummaryGenerator projectSummaryGenerator = new ProjectSummaryGenerator();
+	
+	private List<SimpleEntry<String, String>> dependencyAnalyzeResults;
+	private Map<String, String> fileSummaries = new HashMap<>();
 
 	/**
 	 * Launch the application.
@@ -38,24 +61,25 @@ public class ProjectSummarySWTWindow {
 	 */
 	public static void main(String[] args) {
 		try {
-			ProjectSummarySWTWindow window = new ProjectSummarySWTWindow("Test");
+			ProjectSummarySWTWindow window = new ProjectSummarySWTWindow("Test", "Path");
 			window.open();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 	
-	public static void runSWTWindow(String projecrName) {
+	public static void runSWTWindow(String projectName, String projectPath) {
 		try {
-			ProjectSummarySWTWindow window = new ProjectSummarySWTWindow(projecrName);
+			ProjectSummarySWTWindow window = new ProjectSummarySWTWindow(projectName, projectPath);
 			window.open();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 	
-	public ProjectSummarySWTWindow(String projectName) {
+	public ProjectSummarySWTWindow(String projectName, String projectPath) {
 		this.projectName = projectName;
+		this.projectPath = projectPath;
 	}
 
 	/**
@@ -121,7 +145,7 @@ public class ProjectSummarySWTWindow {
 		Composite composite_status = new Composite(composite_global, SWT.NONE);
 		composite_status.setLayout(new GridLayout(2, false));
 		GridData gd_composite_status = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
-		gd_composite_status.heightHint = 30;
+		gd_composite_status.heightHint = 60;
 		gd_composite_status.widthHint = 800;
 		composite_status.setLayoutData(gd_composite_status);
 		
@@ -135,19 +159,19 @@ public class ProjectSummarySWTWindow {
 		
 		text_status = new Text(composite_status, SWT.BORDER);
 		GridData gd_text_status = new GridData(SWT.LEFT, SWT.TOP, false, false, 1, 1);
-		gd_text_status.heightHint = 18;
+		gd_text_status.heightHint = 45;
 		gd_text_status.widthHint = 620;
 		text_status.setLayoutData(gd_text_status);
 		
 		ScrolledComposite scrolledCompositeTable = new ScrolledComposite(composite_global, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);
 		GridData gd_scrolledCompositeTable = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
 		gd_scrolledCompositeTable.widthHint = 770;
-		gd_scrolledCompositeTable.heightHint = 435;
+		gd_scrolledCompositeTable.heightHint = 410;
 		scrolledCompositeTable.setLayoutData(gd_scrolledCompositeTable);
 		scrolledCompositeTable.setExpandHorizontal(true);
 		scrolledCompositeTable.setExpandVertical(true);
 		
-		TableViewer tableViewer = new TableViewer(scrolledCompositeTable, SWT.BORDER | SWT.FULL_SELECTION);
+		tableViewer = new TableViewer(scrolledCompositeTable, SWT.BORDER | SWT.FULL_SELECTION);
 		table = tableViewer.getTable();
 		table.setLinesVisible(true);
         table.setHeaderVisible(true);
@@ -157,7 +181,7 @@ public class ProjectSummarySWTWindow {
 		tblclmnFileName.setText("File Name");
 		
 		TableColumn tblclmnFileSummary = new TableColumn(table, SWT.NONE);
-		tblclmnFileSummary.setWidth(600);
+		tblclmnFileSummary.setWidth(550);
 		tblclmnFileSummary.setText("File Summary");
 		tableViewer.setContentProvider(new ContentProvider());
         tableViewer.setLabelProvider(new TableLabelProvider());
@@ -166,6 +190,114 @@ public class ProjectSummarySWTWindow {
 
 		shell.open();
 		shell.layout();
+		
+		// 依赖分析
+		text_status.setText("Dependency Analyzing...");
+		
+		Job dependencyAnalyzeJob = new Job("Dependency Analyze"){
+            protected IStatus run(IProgressMonitor monitor){
+            	// 在此添加获取数据的代码
+            	File projectDir = new File(projectPath);
+            	ArrayList<ArrayList<String>> tableRowList = new ArrayList<>();
+        		try {
+        			dependencyAnalyzeResults = analyzer.getImportAnalyzeResults(projectDir);
+        		} catch (Exception e) {
+        			// 依赖分析失败
+        			e.printStackTrace();
+        			MessageBox dialog=new MessageBox(shell,SWT.OK|SWT.ICON_WARNING);
+        	        dialog.setText("WARNING");
+        	        dialog.setMessage("依赖分析失败！");
+        	        dialog.open();
+        		}
+        		for (Entry<String, String> entry : dependencyAnalyzeResults) {
+        			String className = entry.getKey();
+        			ArrayList<String> tableRow = new ArrayList<>();
+        			tableRow.add(className);
+        			tableRow.add("");
+        			tableRowList.add(tableRow);
+        		}
+        		
+        		
+	            Display.getDefault().asyncExec(new Runnable(){
+		            public void run(){
+		            	// 在此添加更新界面的代码
+		            	// 展示得到的结果
+		            	tableRowList.forEach(row -> tableViewer.add(row));
+		            	text_status.setText("Dependency Analyzie Done!\nGenerating File Summary...");
+		            }
+	            });
+				return Status.OK_STATUS;
+        	}
+        };
+        
+
+		// 获取文件摘要
+        Job fileSummaryJob = new Job("File Summary"){
+	        protected IStatus run(IProgressMonitor monitor){
+	        	// 在此添加获取数据的代码
+//	        	System.out.println("Analyze results:");
+//	    		dependencyAnalyzeResults.forEach(entry -> System.out.println(entry.getKey() + ": " + entry.getValue()));
+	        	ArrayList<ArrayList<String>> tableRowList = new ArrayList<>();
+	        	for (Entry<String, String> entry : dependencyAnalyzeResults) {
+	    			String className = entry.getKey();
+	    			String fileSummary = fileSummaryGenerator.getFileSummary(className);
+	    			ArrayList<String> tableRow = new ArrayList<>();
+	    			tableRow.add(className);
+	    			tableRow.add(fileSummary);
+	    			fileSummaries.put(className, fileSummary);
+	    			tableRowList.add(tableRow);
+	    		}
+
+	            Display.getDefault().asyncExec(new Runnable(){
+		            public void run(){
+		            	// 在此添加更新界面的代码
+		            	// 展示得到的结果
+		            	table.removeAll();
+		            	tableRowList.forEach(row -> tableViewer.add(row));
+		            	text_status.setText("Dependency Analyzie Done!\nGenerate File Summary Done!\nGenerating Project Summary...");
+		            }
+	            });
+				return Status.OK_STATUS;
+        	}
+        };
+        
+        // 获取项目摘要
+        Job projectSummaryJob = new Job("Project Summary"){
+	        protected IStatus run(IProgressMonitor monitor){
+	        	// 在此添加获取数据的代码
+	        	String projectSummary = projectSummaryGenerator.getProjectSummary(projectName, fileSummaries);
+	            Display.getDefault().asyncExec(new Runnable(){
+		            public void run(){
+		            	// 在此添加更新界面的代码
+		            	// 展示得到的结果
+		            	text_summary.setText(projectSummary);
+		            	text_status.setText("Dependency Analyzie Done!\nGenerate File Summary Done!\nGenerate Project Summary Done!");
+		            }
+	            });
+				return Status.OK_STATUS;
+        	}
+        };
+        
+        // 调度规则，相当于信号量
+        ISchedulingRule scheduleRULE = new ISchedulingRule() {
+            public boolean contains(ISchedulingRule rule) {
+              return this.equals(rule);
+            }
+
+            public boolean isConflicting(ISchedulingRule rule) {
+              return this.equals(rule);
+            }
+        };
+        // 按顺序设置规则，就会按顺序调度
+        dependencyAnalyzeJob.setRule(scheduleRULE);
+        fileSummaryJob.setRule(scheduleRULE);
+        projectSummaryJob.setRule(scheduleRULE);
+        
+        dependencyAnalyzeJob.schedule();
+        fileSummaryJob.schedule();
+        projectSummaryJob.schedule();
+        
+		
 		while (!shell.isDisposed()) {
 			if (!display.readAndDispatch()) {
 				display.sleep();

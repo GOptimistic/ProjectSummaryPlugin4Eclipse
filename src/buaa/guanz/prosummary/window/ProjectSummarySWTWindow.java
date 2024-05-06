@@ -8,7 +8,6 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Text;
 
-import buaa.guanz.prosummary.commons.BaseResult.Predict;
 import buaa.guanz.prosummary.utils.DependencyAnalyzer;
 import buaa.guanz.prosummary.utils.FileSummaryGenerator;
 import buaa.guanz.prosummary.utils.ProjectSummaryGenerator;
@@ -240,7 +239,8 @@ public class ProjectSummarySWTWindow {
 	        	ArrayList<ArrayList<String>> tableRowList = new ArrayList<>();
 	        	for (Entry<String, String> entry : dependencyAnalyzeResults) {
 	    			String className = entry.getKey();
-	    			String fileSummary = fileSummaryGenerator.getFileSummary(className);
+	    			String filePath = entry.getValue();
+	    			String fileSummary = fileSummaryGenerator.getFileSummary(className, filePath, projectName);
 	    			ArrayList<String> tableRow = new ArrayList<>();
 	    			tableRow.add(className);
 	    			tableRow.add(fileSummary);

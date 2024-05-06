@@ -16,11 +16,9 @@ import org.eclipse.ui.PlatformUI;
 
 import buaa.guanz.prosummary.commons.BaseResult;
 import buaa.guanz.prosummary.commons.JsonUtils;
-import buaa.guanz.prosummary.commons.BaseResult.Predict;
 import buaa.guanz.prosummary.utils.HttpTools;
 import buaa.guanz.prosummary.utils.HttpVars;
 import buaa.guanz.prosummary.window.ProjectSummarySWTWindow;
-import buaa.guanz.prosummary.window.VulSWTWinodow;
 
 public class ProjectSummaryClicker implements IHandler{
 	

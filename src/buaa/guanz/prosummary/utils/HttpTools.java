@@ -1,5 +1,7 @@
 package buaa.guanz.prosummary.utils;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
@@ -8,6 +10,7 @@ import java.util.Map.Entry;
 import org.apache.http.HttpEntity;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -15,6 +18,9 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
+
+import buaa.guanz.prosummary.commons.BaseResult;
+import buaa.guanz.prosummary.commons.JsonUtils;
 
 
 public class HttpTools {
@@ -28,12 +34,12 @@ public class HttpTools {
         // 创建httpPost远程连接实例
         HttpPost httpPost = new HttpPost(url);
         // 配置请求参数实例(不需要可忽略)
-//        RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(35000)// 设置连接主机服务超时时间
-//                .setConnectionRequestTimeout(35000)// 设置连接请求超时时间
-//                .setSocketTimeout(60000)// 设置读取数据连接超时时间
-//                .build();
-        // 为httpPost实例设置配置(不需要可忽略)
-//        httpPost.setConfig(requestConfig);
+        RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(35000)// 设置连接主机服务超时时间
+                .setConnectionRequestTimeout(30000)// 设置连接请求超时时间
+                .setSocketTimeout(120000)// 设置读取数据连接超时时间
+                .build();
+//         为httpPost实例设置配置(不需要可忽略)
+        httpPost.setConfig(requestConfig);
         // 设置请求头，配置form表单
         httpPost.addHeader("Content-Type", "application/x-www-form-urlencoded");
         // 封装表单参数
@@ -91,5 +97,39 @@ public class HttpTools {
         }
         return result;
     }
+	
+	public static String readFileToString(String filePath) throws IOException {
+        StringBuilder content = new StringBuilder();
+        BufferedReader reader = new BufferedReader(new FileReader(filePath));
+        String line;
+        while ((line = reader.readLine()) != null) {
+            content.append(line);
+            content.append(System.lineSeparator());
+        }
+        reader.close();
+        return content.toString();
+    }
+	
+	public static void main(String[] args) {
+		Map<String, String> paramMap = new HashMap<>();
+		paramMap.put("fileName", "org.xtreemfs.babudb.index.ByteRange");
+		paramMap.put("repoName", "babudb");
+		String fileContent = "";
+		try {
+            String filePath = "/Users/guanzheng/cls_work/python_test/github_repo_data/java/xtreemfs_babudb/java/babudb-core/src/main/java/org/xtreemfs/babudb/index/ByteRange.java";
+            fileContent = readFileToString(filePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+		paramMap.put("context", fileContent);
+
+		String res = postformRequest(HttpVars.FILESUMMARYURL, paramMap);
+		System.out.println(res);
+		BaseResult jsonObj = JsonUtils.getJsonResult(res);
+		if (jsonObj != null) {
+			System.out.println("Parse json data ok.");
+			System.out.println(jsonObj.getRes());
+		}
+	}
 
 }

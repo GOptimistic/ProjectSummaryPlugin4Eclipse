@@ -1,7 +1,7 @@
 package buaa.guanz.prosummary.utils;
 
 public class HttpVars {
-	public static String BASEURL = "http://127.0.0.1";
-	public static int BASEPORT = 5000;
-	public static String PREDICTURL = String.format("%s:%d/predict", BASEURL, BASEPORT);
+	public static String BASEURL = "http://192.168.5.193";
+	public static int BASEPORT = 8888;
+	public static String FILESUMMARYURL = String.format("%s:%d/file", BASEURL, BASEPORT);
 }

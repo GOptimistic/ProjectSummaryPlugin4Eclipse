@@ -62,7 +62,7 @@ public class FileSummaryGenerator {
 		BaseResult jsonObj = JsonUtils.getJsonResult(res);
 		if (jsonObj != null) {
 			System.out.println("Parse json data ok.");
-			System.out.println("###### Summary " + jsonObj.getCode() + " " + jsonObj.getRes());
+			System.out.println("###### File Summary " + jsonObj.getCode() + " " + jsonObj.getRes());
 			return jsonObj.getRes();
 		} else {
 			return "Generate file summary failed";

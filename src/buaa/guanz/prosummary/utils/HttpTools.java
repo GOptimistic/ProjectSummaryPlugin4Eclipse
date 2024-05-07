@@ -14,10 +14,12 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
+import com.google.gson.Gson;
 
 import buaa.guanz.prosummary.commons.BaseResult;
 import buaa.guanz.prosummary.commons.JsonUtils;
@@ -112,18 +114,23 @@ public class HttpTools {
 	
 	public static void main(String[] args) {
 		Map<String, String> paramMap = new HashMap<>();
-		paramMap.put("fileName", "org.xtreemfs.babudb.index.ByteRange");
 		paramMap.put("repoName", "babudb");
-		String fileContent = "";
-		try {
-            String filePath = "/Users/guanzheng/cls_work/python_test/github_repo_data/java/xtreemfs_babudb/java/babudb-core/src/main/java/org/xtreemfs/babudb/index/ByteRange.java";
-            fileContent = readFileToString(filePath);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-		paramMap.put("context", fileContent);
-
-		String res = postformRequest(HttpVars.FILESUMMARYURL, paramMap);
+//		String fileContent = "";
+//		try {
+//            String filePath = "/Users/guanzheng/cls_work/python_test/github_repo_data/java/xtreemfs_babudb/java/babudb-core/src/main/java/org/xtreemfs/babudb/index/ByteRange.java";
+//            fileContent = readFileToString(filePath);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//		paramMap.put("context", fileContent);
+		Map<String, String> summaryMap = new HashMap<>();
+		summaryMap.put("a.b.c.test", "test");
+		summaryMap.put("a.b.c.big", "big");
+		summaryMap.put("a.b.c.d.small", "small");
+		Gson gson = new Gson();
+        String summaryJson = gson.toJson(summaryMap).toString();
+		paramMap.put("summaries", summaryJson);
+		String res = postformRequest(HttpVars.PROJECTSUMMARYURL, paramMap);
 		System.out.println(res);
 		BaseResult jsonObj = JsonUtils.getJsonResult(res);
 		if (jsonObj != null) {
